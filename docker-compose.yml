@@ -1,0 +1,122 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: expensotrack_backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/expensotrack
+      - MONGO_URL=mongodb://mongo:27017/expensotrack
+    depends_on:
+      - db
+      - mongo
+
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: expensotrack_auth
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./services/auth:/app
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/expensotrack
+      - MONGO_URL=mongodb://mongo:27017/expensotrack
+    depends_on:
+      - db
+      - mongo
+
+  expense:
+    build:
+      context: ./services/expense
+      dockerfile: Dockerfile
+    container_name: expensotrack_expense
+    command: uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+    volumes:
+      - ./services/expense:/app
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/expensotrack
+      - MONGO_URL=mongodb://mongo:27017/expensotrack
+    depends_on:
+      - db
+      - mongo
+
+  analytics:
+    build:
+      context: ./services/analytics
+      dockerfile: Dockerfile
+    container_name: expensotrack_analytics
+    command: uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+    volumes:
+      - ./services/analytics:/app
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/expensotrack
+      - MONGO_URL=mongodb://mongo:27017/expensotrack
+    depends_on:
+      - db
+      - mongo
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: expensotrack_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+
+  db:
+    image: postgres:13
+    container_name: expensotrack_db
+    volumes:
+      - ./db/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=expensotrack
+    ports:
+      - "5433:5432"
+
+  mongo:
+    image: mongo:4.4
+    container_name: expensotrack_mongo
+    volumes:
+      - ./db/mongo:/data/db
+    ports:
+      - "27017:27017"
+
+  app:
+    build:
+      context: ./expensotrack_app
+      dockerfile: temp-flutter-dockerfiles/Dockerfile-android
+    container_name: expensotrack_app
+    volumes:
+      - ./expensotrack_app:/app
+    ports:
+      - "8080:8080"
+      - "5554:5554"
+      - "5555:5555"
+      - "5901:5901"
+    environment:
+      - FLUTTER_ENV=development
+    depends_on:
+      - backend
+      - auth
+      - expense
+      - analytics

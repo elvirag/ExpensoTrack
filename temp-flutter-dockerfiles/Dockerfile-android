@@ -1,0 +1,72 @@
+# Use the specified Flutter image from GitHub Container Registry
+FROM ghcr.io/cirruslabs/flutter:3.22.1
+
+ENV FLUTTER_VERSION=3.22.1
+ENV DEBIAN_FRONTEND="noninteractive"
+# Install necessary packages for the Android SDK and emulator
+RUN apt-get update && apt-get install -y \
+    qemu-kvm \
+    libvirt-daemon-system \
+    libvirt-clients \
+    bridge-utils \
+    cpu-checker \
+    kmod \
+    curl \
+    unzip \
+    zip \
+    libglu1-mesa \
+    cmake \
+    make \
+    ninja-build \
+    clang \
+    pkg-config \
+    libgtk-3-dev \
+    libssl-dev \
+    libc6-dev
+
+
+# Set up environment variables for Android SDK
+ENV ANDROID_SDK_ROOT /sdk
+ENV PATH "$ANDROID_SDK_ROOT/cmdline-tools/tools/bin:$PATH"
+ENV PATH "$ANDROID_SDK_ROOT/emulator:$PATH"
+ENV PATH "$ANDROID_SDK_ROOT/platform-tools:$PATH"
+ENV PATH "$ANDROID_SDK_ROOT/tools:$PATH"
+ENV PATH "$ANDROID_SDK_ROOT/tools/bin:$PATH"
+ENV PATH "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+
+# Install Android SDK command line tools
+RUN mkdir -p /sdk/cmdline-tools && \
+    cd /sdk/cmdline-tools && \
+    curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip && \
+    unzip sdk-tools.zip && \
+    rm sdk-tools.zip
+
+# Accept licenses and install SDK packages
+RUN yes | sdkmanager --licenses && \
+    sdkmanager "platform-tools" "emulator" "platforms;android-29" "system-images;android-29;default;x86_64"
+
+# Create and start an Android emulator
+RUN avdmanager create avd -n test -k "system-images;android-29;default;x86_64" --device "pixel"
+RUN echo "hw.cpu.ncore=2" >> /root/.android/avd/test.avd/config.ini
+
+# Expose the necessary ports for the emulator
+EXPOSE 5554 5555 5901
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY expensotrack_app /app
+# PREPARE flutter
+#RUN git init \
+#&& git remote add origin https://github.com/flutter/flutter.git \
+#&& git fetch --all --tags
+#RUN git checkout tags/$FLUTTER_VERSION -b $FLUTTER_VERSION
+
+#RUN flutter channel stable
+RUN flutter doctor -v
+# Run the Flutter packages get command to fetch dependencies
+RUN flutter pub get
+
+# Start the emulator and run the Flutter app
+CMD ["bash", "-c", "emulator @test -no-snapshot-save -noaudio -no-boot-anim -accel on & flutter run"]

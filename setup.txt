@@ -1,0 +1,32 @@
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+sudo -i -u postgres
+psql
+CREATE DATABASE expensotrack;
+CREATE USER expensouser WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE expensotrack TO expensouser;
+\q
+exit
+
+
+Step 4: Setting Up the Mobile App with Flutter
+Initialize Flutter Project:
+
+flutter create expensotrack_app
+cd expensotrack_app
+flutter run
+
+
+Running docker image with logs (for flutter, but can be used for other debugging):
+ild -f Dockerfile-web -t expensotrack-app-web --progress=plain . 2>&1 | tee build.log
+
+
+
+Configure HTTP Requests:
+
+Use the http package to communicate with FastAPI services.
+Integrate with authentication and expense services to fetch and manage data.
+UI Design:
+
+Design a clean and intuitive interface for adding expenses, viewing stats, and managing categories.
+Implement state management with provider or bloc for better state handling.

@@ -1,0 +1,27 @@
+# Use the specified Flutter image from GitHub Container Registry
+FROM ghcr.io/cirruslabs/flutter:3.22.0
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY expensotrack_app /app
+
+# Run the Flutter packages get command to fetch dependencies
+RUN flutter doctor -v
+RUN flutter channel master
+RUN flutter upgrade
+### This command enables web support in the Flutter SDK.
+### It configures the Flutter environment to include web-specific libraries and dependencies required for building Flutter web applications.
+RUN flutter config --enable-web
+
+### This command builds the Flutter web application in release mode.
+### It generates the necessary files and assets for running the application on the web.
+### The --web-renderer=auto flag allows Flutter to automatically choose the appropriate web renderer (HTML or Canvas) based on the platform and browser capabilities.
+RUN flutter build web --release --web-renderer=auto
+
+# Expose the port for the web server
+EXPOSE 8080
+
+# Run Flutter for web using Chrome in headless mode
+CMD ["flutter", "run", "-d", "web-server", "--web-renderer=auto", "--web-port=8080", "--web-hostname", "0.0.0.0"]
